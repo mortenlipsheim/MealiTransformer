@@ -101,7 +101,10 @@ export async function createMealieRecipe(recipe: Recipe, settings: Settings): Pr
   try {
     const fullUrl = new URL('/api/recipes', settings.mealieUrl).toString();
 
-    const headers: HeadersInit = { 'Content-Type': 'application/json' };
+    const headers: HeadersInit = { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json' 
+    };
     if (settings.mealieApiToken) {
       headers['Authorization'] = `Bearer ${settings.mealieApiToken}`;
     }
