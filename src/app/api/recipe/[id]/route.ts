@@ -1,3 +1,4 @@
+
 // src/app/api/recipe/[id]/route.ts
 import { NextResponse } from 'next/server';
 import { getRecipeHtml } from '@/lib/recipe-cache';

@@ -1,3 +1,4 @@
+
 // A simple in-memory cache to store recipe HTML for a short period.
 // In a production environment with multiple server instances, you would
 // replace this with a distributed cache like Redis or Memcached.
