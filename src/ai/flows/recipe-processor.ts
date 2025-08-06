@@ -76,10 +76,41 @@ const processRecipeFlow = ai.defineFlow(
     outputSchema: ProcessRecipeOutputSchema,
   },
   async (input) => {
-    const { output } = await processRecipePrompt(input);
+    // Modify the prompt input based on the type
+    const modifiedInput = { ...input };
+    let promptContent = `The recipe source type is: ${input.inputType}\n\nThe recipe source is:\n`;
+
+    if (input.inputType === 'image') {
+      promptContent += `{{media url=source}}`;
+    } else {
+      promptContent += `{{{source}}}`;
+    }
+
+    const fullPrompt = `You are an expert recipe parsing AI. Your task is to analyze the provided recipe source, extract all relevant information, and format it into a structured JSON object.
+
+${promptContent}
+
+Follow these instructions:
+1.  **Analyze the source:** Carefully examine the content. It could be a webpage (URL), plain text, an image of a handwritten or printed recipe, or a YouTube video.
+2.  **Extract Information:** Identify all the key components of the recipe: name, description, preparation time, cook time, total time, yield (servings), category, cuisine, ingredients, and instructions.
+3.  **Translate and Convert:** Translate all extracted text to the target language: **{{targetLanguage}}**. Convert all measurements to the **{{targetMeasuringSystem}}** system.
+4.  **Format Output:** Structure the extracted and converted information precisely according to the output schema.
+5.  **Handle Missing Information:** If some information (like prep time or cuisine) is not present in the source, omit it from the output. Do not invent data. The only required fields are name, ingredients and instructions.
+`;
+    
+    const { output } = await ai.generate({
+        prompt: fullPrompt,
+        model: 'googleai/gemini-2.0-flash', // Assuming this model from genkit.ts
+        output: { schema: ProcessRecipeOutputSchema },
+        input: modifiedInput,
+    });
+
+
     if (!output) {
       throw new Error('AI failed to generate a response.');
     }
     return output;
   }
 );
+
+    
