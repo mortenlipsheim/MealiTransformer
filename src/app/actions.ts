@@ -6,6 +6,9 @@ import { extractRecipeFromYoutube } from '@/ai/flows/extract-recipe-from-youtube
 import { extractTextFromImage } from '@/ai/flows/extract-text-from-image';
 import { translateAndFormatRecipe } from '@/ai/flows/translate-and-format-recipe';
 import type { Recipe, Settings } from '@/types';
+import { generateHtmlForMealie } from '@/ai/flows/generate-html-for-mealie';
+import { setRecipeHtml } from '@/lib/recipe-cache';
+import { v4 as uuidv4 } from 'uuid';
 
 // Helper to parse unstructured text into a recipe object
 const RecipeSchema = z.object({
@@ -98,26 +101,25 @@ export async function transformRecipe(input: TransformInput): Promise<{ success:
 
 export async function generateAndPostToMealie(recipe: Recipe): Promise<{ success: boolean; recipeSlug?: string; error?: string }> {
   try {
-    // 1. Create a temporary page on our own app
+    // 1. Generate the schema.org HTML
+    const { html } = await generateHtmlForMealie(recipe);
+    if (!html) {
+      throw new Error('Failed to generate recipe HTML');
+    }
+
+    // 2. Store it in the cache and get a unique ID
+    const id = uuidv4();
+    setRecipeHtml(id, html);
+
+    // 3. Construct the temporary URL
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
     if (!appUrl) {
-      throw new Error("NEXT_PUBLIC_APP_URL is not set in the environment variables.");
+      throw new Error("NEXT_PUBLIC_APP_URL is not set in the environment variables. Please set it in the .env file for the deployed application.");
     }
-    
-    const createResponse = await fetch(`${appUrl}/api/recipe/create`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(recipe),
-    });
-
-    if (!createResponse.ok) {
-        throw new Error(`Failed to create temporary recipe page: ${await createResponse.text()}`);
-    }
-    const { id } = await createResponse.json();
     const tempRecipeUrl = `${appUrl}/api/recipe/${id}`;
 
 
-    // 2. Tell Mealie to scrape that URL
+    // 4. Tell Mealie to scrape that URL
     const mealieUrl = process.env.MEALIE_URL;
     const mealieToken = process.env.MEALIE_API_TOKEN;
 
