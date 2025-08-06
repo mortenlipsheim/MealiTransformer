@@ -98,48 +98,13 @@ export async function transformRecipe(input: TransformInput): Promise<{ success:
 }
 
 
-export async function generateAndPostToMealie(recipe: Recipe): Promise<{ success: boolean; url?: string; error?: string }> {
+export async function generateMealieHtml(recipe: Recipe): Promise<{ success: boolean; html?: string; error?: string }> {
   try {
     // 1. Generate the HTML for the recipe
     const { html } = await generateHtmlForMealie({ ...recipe });
-
-    // 2. Post the HTML to our temporary storage API route
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-    if (!appUrl) {
-      throw new Error('NEXT_PUBLIC_APP_URL is not set. Please set it in the .env file.');
-    }
-    const createUrl = new URL('/api/recipe/create', appUrl).toString();
-
-    const createResponse = await fetch(createUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ htmlContent: html }),
-    });
-    
-    if (!createResponse.ok) {
-      const errorText = await createResponse.text();
-      console.error("Create recipe page error:", errorText);
-      throw new Error(`Failed to create temporary recipe page: ${errorText}`);
-    }
-    
-    const { url: tempRecipeUrl } = await createResponse.json();
-
-    // 3. Construct the Mealie import URL
-    const mealieUrl = process.env.MEALIE_URL;
-    if (!mealieUrl) {
-        throw new Error('MEALIE_URL is not set in the environment variables.');
-    }
-    
-    // This URL takes the user to the import page in Mealie's UI
-    // It assumes a default group, which is common. If there's a specific group like /g/groupname/,
-    // the user might need to adjust their base MEALIE_URL in the .env file.
-    const importUrl = new URL('/recipes/import', mealieUrl);
-    importUrl.searchParams.set('url', tempRecipeUrl);
-
-    return { success: true, url: importUrl.toString() };
-
+    return { success: true, html };
   } catch (error: any) {
-    console.error('Error in generateAndPostToMealie:', error);
-    return { success: false, error: error.message || 'Failed to prepare recipe for Mealie.' };
+    console.error('Error in generateMealieHtml:', error);
+    return { success: false, error: error.message || 'Failed to generate recipe HTML.' };
   }
 }
