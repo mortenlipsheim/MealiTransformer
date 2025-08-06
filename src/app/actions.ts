@@ -4,7 +4,6 @@ import { z } from 'zod';
 import { ai } from '@/ai/genkit';
 import { extractRecipeFromYoutube } from '@/ai/flows/extract-recipe-from-youtube';
 import { extractTextFromImage } from '@/ai/flows/extract-text-from-image';
-import { generateHtmlForMealie } from '@/ai/flows/generate-html-for-mealie';
 import { translateAndFormatRecipe } from '@/ai/flows/translate-and-format-recipe';
 import type { Recipe, Settings } from '@/types';
 
@@ -69,6 +68,9 @@ export async function transformRecipe(input: TransformInput): Promise<{ success:
       } else if (input.type === 'url') {
         // Basic URL fetch and text extraction
         const response = await fetch(input.source);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch URL: ${response.statusText}`);
+        }
         const html = await response.text();
         // A simple way to get text, could be improved with a proper library
         rawText = html.replace(/<style[^>]*>.*<\/style>/gs, '')
@@ -94,48 +96,33 @@ export async function transformRecipe(input: TransformInput): Promise<{ success:
   }
 }
 
-// Action to generate HTML and post to our own API route
-export async function generateAndPost(recipe: Recipe): Promise<{ success: boolean; url?: string; error?: string }> {
+// Action to create a recipe in Mealie directly
+export async function createMealieRecipe(recipe: Recipe, settings: Settings): Promise<{ success: boolean; url?: string; error?: string }> {
   try {
-    const { html } = await generateHtmlForMealie(recipe);
-
-    // Instead of dpaste, we'll use a local API route to store and serve the HTML.
-    // We'll pass the HTML in the body of a POST request.
-    const response = await fetch(new URL('/api/recipe', process.env.NEXT_PUBLIC_URL), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ html }),
-    });
-
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `API error: ${response.statusText}`);
-    }
-
-    const { id } = await response.json();
-    const url = new URL(`/api/recipe?id=${id}`, process.env.NEXT_PUBLIC_URL).toString();
-    
-    return { success: true, url: url.trim() };
-  } catch (error: any) {
-    console.error('Local post error:', error);
-    return { success: false, error: error.message || 'Failed to post to local API.' };
-  }
-}
-
-// Action to send URL to Mealie
-export async function sendToMealie(url: string, mealieUrl: string, mealieApiToken?: string): Promise<{ success: boolean; url?: string; error?: string }> {
-  try {
-    const fullUrl = new URL('/api/recipes/url', mealieUrl).toString();
+    const fullUrl = new URL('/api/recipes', settings.mealieUrl).toString();
 
     const headers: HeadersInit = { 'Content-Type': 'application/json' };
-    if (mealieApiToken) {
-      headers['Authorization'] = `Bearer ${mealieApiToken}`;
+    if (settings.mealieApiToken) {
+      headers['Authorization'] = `Bearer ${settings.mealieApiToken}`;
     }
+
+    const body = {
+        name: recipe.name,
+        description: recipe.description,
+        recipeIngredient: recipe.ingredients.map(ing => ({ note: ing, disableAmount: true })),
+        recipeInstructions: recipe.instructions.map(inst => ({ text: inst })),
+        prepTime: recipe.prepTime,
+        cookTime: recipe.cookTime,
+        totalTime: recipe.totalTime,
+        recipeYield: recipe.recipeYield,
+        recipeCategory: recipe.recipeCategory ? { name: recipe.recipeCategory } : undefined,
+        recipeCuisine: recipe.recipeCuisine ? { name: recipe.recipeCuisine } : undefined,
+    };
 
     const response = await fetch(fullUrl, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ url, include_tags: true }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
@@ -143,14 +130,12 @@ export async function sendToMealie(url: string, mealieUrl: string, mealieApiToke
         throw new Error(`Mealie API Error: ${errorData.detail || response.statusText}`);
     }
     
-    const recipeId = await response.text();
-    // Mealie returns the ID of the new recipe slug, which is a string.
-    const recipeSlug = recipeId.replace(/"/g, ''); 
-    const finalUrl = new URL(`/recipe/${recipeSlug}`, mealieUrl).toString();
+    const recipeSlug = await response.json(); // Mealie returns the slug of the new recipe
+    const finalUrl = new URL(`/recipe/${recipeSlug}`, settings.mealieUrl).toString();
 
     return { success: true, url: finalUrl };
   } catch (error: any) {
-    console.error('Mealie send error:', error);
-    return { success: false, error: error.message || 'Failed to send to Mealie.' };
+    console.error('Mealie create error:', error);
+    return { success: false, error: error.message || 'Failed to create recipe in Mealie.' };
   }
 }
