@@ -128,7 +128,7 @@ export async function generateAndPostToMealie(recipe: Recipe): Promise<{ success
     const { url: tempRecipeUrl } = await postResponse.json();
 
     // 3. Send the temporary URL to Mealie for scraping
-    const fullUrl = new URL('/api/recipes/scrape-url', process.env.MEALIE_URL).toString();
+    const fullUrl = new URL('/api/recipes/scrape-url/', process.env.MEALIE_URL).toString();
 
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
@@ -144,7 +144,9 @@ export async function generateAndPostToMealie(recipe: Recipe): Promise<{ success
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ detail: 'Unknown Mealie API error' }));
-      throw new Error(`Mealie API Error: ${errorData.detail || response.statusText}`);
+      // Use the specific Mealie error detail if available, otherwise the status text.
+      const errorMessage = errorData.detail || response.statusText;
+      throw new Error(`Mealie API Error: ${errorMessage}`);
     }
 
     const recipeSlug = await response.json(); // Mealie returns the slug of the new recipe
