@@ -106,6 +106,9 @@ export async function generateAndPostToMealie(recipe: Recipe): Promise<{ success
     if (!process.env.MEALIE_URL) {
         throw new Error("MEALIE_URL is not set in the environment variables. Please configure it in the .env file.");
     }
+    if (!process.env.MEALIE_API_TOKEN) {
+      throw new Error("MEALIE_API_TOKEN is not set in the environment variables. Please configure it in the .env file.");
+    }
 
     // 1. Generate the HTML for the recipe
     const { html } = await generateHtmlForMealie(recipe);
@@ -129,10 +132,8 @@ export async function generateAndPostToMealie(recipe: Recipe): Promise<{ success
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      'Authorization': `Bearer ${process.env.MEALIE_API_TOKEN}`,
     };
-    if (process.env.MEALIE_API_TOKEN) {
-      headers['Authorization'] = `Bearer ${process.env.MEALIE_API_TOKEN}`;
-    }
 
     const response = await fetch(fullUrl, {
       method: 'POST',
