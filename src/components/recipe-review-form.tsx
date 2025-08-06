@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { createMealieRecipe } from '@/app/actions';
+import { generateAndPostToMealie } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 
 interface RecipeReviewFormProps {
@@ -39,7 +39,7 @@ export function RecipeReviewForm({ initialRecipe, setIsLoading, resetFlow }: Rec
   const onFinalSubmit = async (data: Recipe) => {
     setIsLoading(true);
     try {
-      const mealieResult = await createMealieRecipe(data, settings);
+      const mealieResult = await generateAndPostToMealie(data, settings);
       if (!mealieResult.success) {
         throw new Error(mealieResult.error || t('errorSend'));
       }

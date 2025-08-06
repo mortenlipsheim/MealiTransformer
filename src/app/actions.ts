@@ -6,6 +6,7 @@ import { extractRecipeFromYoutube } from '@/ai/flows/extract-recipe-from-youtube
 import { extractTextFromImage } from '@/ai/flows/extract-text-from-image';
 import { translateAndFormatRecipe } from '@/ai/flows/translate-and-format-recipe';
 import type { Recipe, Settings } from '@/types';
+import { generateHtmlForMealie } from '@/ai/flows/generate-html-for-mealie';
 
 // Helper to parse unstructured text into a recipe object
 const RecipeSchema = z.object({
@@ -96,44 +97,54 @@ export async function transformRecipe(input: TransformInput): Promise<{ success:
   }
 }
 
-// Action to create a recipe in Mealie directly
-export async function createMealieRecipe(recipe: Recipe, settings: Settings): Promise<{ success: boolean; url?: string; error?: string }> {
+// Action to generate HTML, post it to our own API route, and then send the resulting URL to Mealie
+export async function generateAndPostToMealie(recipe: Recipe, settings: Settings): Promise<{ success: boolean; url?: string; error?: string }> {
   try {
-    const fullUrl = new URL('/api/recipes', settings.mealieUrl).toString();
+    if (!process.env.NEXT_PUBLIC_APP_URL) {
+      throw new Error("NEXT_PUBLIC_APP_URL is not set in the environment variables. Please configure it in the .env file.");
+    }
 
-    const headers: HeadersInit = { 
-        'Content-Type': 'application/json',
-        'Accept': 'application/json' 
+    // 1. Generate the HTML for the recipe
+    const { html } = await generateHtmlForMealie(recipe);
+
+    // 2. Post the HTML to our temporary storage API route
+    const postResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/recipe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ htmlContent: html }),
+    });
+
+    if (!postResponse.ok) {
+      throw new Error(`Failed to create temporary recipe page. Status: ${postResponse.statusText}`);
+    }
+
+    const { url: tempRecipeUrl } = await postResponse.json();
+
+    // 3. Send the temporary URL to Mealie for scraping
+    const fullUrl = new URL('/api/recipes/scrape-url', settings.mealieUrl).toString();
+
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
     };
     if (settings.mealieApiToken) {
       headers['Authorization'] = `Bearer ${settings.mealieApiToken}`;
     }
 
-    const body = {
-        name: recipe.name,
-        description: recipe.description,
-        recipeIngredient: recipe.ingredients.map(ing => ({ note: ing, disableAmount: true })),
-        recipeInstructions: recipe.instructions.map(inst => ({ text: inst })),
-        prepTime: recipe.prepTime,
-        cookTime: recipe.cookTime,
-        totalTime: recipe.totalTime,
-        recipeYield: recipe.recipeYield,
-        recipeCategory: recipe.recipeCategory ? { name: recipe.recipeCategory } : undefined,
-        recipeCuisine: recipe.recipeCuisine ? { name: recipe.recipeCuisine } : undefined,
-    };
-
     const response = await fetch(fullUrl, {
       method: 'POST',
       headers,
-      body: JSON.stringify(body),
+      body: JSON.stringify({ url: tempRecipeUrl, include_tags: true }),
     });
 
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: 'Unknown Mealie API error' }));
-        throw new Error(`Mealie API Error: ${errorData.detail || response.statusText}`);
+      const errorData = await response.json().catch(() => ({ detail: 'Unknown Mealie API error' }));
+      throw new Error(`Mealie API Error: ${errorData.detail || response.statusText}`);
     }
-    
+
     const recipeSlug = await response.json(); // Mealie returns the slug of the new recipe
+    // The final URL structure might depend on groups. This is a common structure.
+    // You may need to adjust this if your Mealie setup is different.
     const finalUrl = new URL(`/recipe/${recipeSlug}`, settings.mealieUrl).toString();
 
     return { success: true, url: finalUrl };
