@@ -7,6 +7,7 @@ import { extractTextFromImage } from '@/ai/flows/extract-text-from-image';
 import { translateAndFormatRecipe } from '@/ai/flows/translate-and-format-recipe';
 import { generateHtmlForMealie } from '@/ai/flows/generate-html-for-mealie';
 import type { Recipe, Settings } from '@/types';
+import { v4 as uuidv4 } from 'uuid';
 
 // Helper to parse unstructured text into a recipe object
 const RecipeSchema = z.object({
@@ -97,14 +98,69 @@ export async function transformRecipe(input: TransformInput): Promise<{ success:
   }
 }
 
+interface MealieResponse {
+  id: string; // This is the recipe slug
+}
 
-export async function generateMealieHtml(recipe: Recipe): Promise<{ success: boolean; html?: string; error?: string }> {
+export async function generateAndPostToMealie(recipe: Recipe): Promise<{ success: boolean; recipeSlug?: string; error?: string }> {
   try {
-    // 1. Generate the HTML for the recipe
-    const { html } = await generateHtmlForMealie({ ...recipe });
-    return { success: true, html };
+    // 1. Create a temporary page on our own app
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    if (!appUrl) {
+      throw new Error("NEXT_PUBLIC_APP_URL is not set in the environment variables.");
+    }
+    
+    const createResponse = await fetch(`${appUrl}/api/recipe/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(recipe),
+    });
+
+    if (!createResponse.ok) {
+        throw new Error(`Failed to create temporary recipe page: ${await createResponse.text()}`);
+    }
+    const { id } = await createResponse.json();
+    const tempRecipeUrl = `${appUrl}/api/recipe/${id}`;
+
+
+    // 2. Tell Mealie to scrape that URL
+    const mealieUrl = process.env.MEALIE_URL;
+    const mealieToken = process.env.MEALIE_API_TOKEN;
+
+    if (!mealieUrl || !mealieToken) {
+      throw new Error('Mealie URL or API token is not configured in environment variables.');
+    }
+
+    const fullUrl = new URL('/api/recipes/scrape-url/', mealieUrl).toString();
+
+    const headers = new Headers({
+        'Authorization': `Bearer ${mealieToken}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+    });
+
+    const response = await fetch(fullUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ url: tempRecipeUrl, include_tags: true }),
+    });
+
+    if (response.status === 405) {
+      throw new Error('Mealie API Error: Method not allowed. The scrape-url endpoint may be disabled or you might be using an older Mealie version.');
+    }
+    
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error('Mealie API Error:', errorBody);
+      throw new Error(`Mealie API request failed with status ${response.status}: ${errorBody}`);
+    }
+
+    const recipeSlug = (await response.json()) as string; // Mealie returns the slug directly
+
+    return { success: true, recipeSlug };
+
   } catch (error: any) {
-    console.error('Error in generateMealieHtml:', error);
-    return { success: false, error: error.message || 'Failed to generate recipe HTML.' };
+    console.error('Error in generateAndPostToMealie:', error);
+    return { success: false, error: error.message || 'Failed to post recipe to Mealie.' };
   }
 }

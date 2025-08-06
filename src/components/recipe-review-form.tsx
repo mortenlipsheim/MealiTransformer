@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
-import { Trash2, PlusCircle, Copy } from 'lucide-react';
+import { Trash2, PlusCircle, ExternalLink } from 'lucide-react';
 import type { Recipe } from '@/types';
 import { useSettings } from '@/hooks/use-settings';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { generateMealieHtml } from '@/app/actions';
+import { generateAndPostToMealie } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -35,7 +35,7 @@ export function RecipeReviewForm({ initialRecipe, setIsLoading, resetFlow }: Rec
     defaultValues: initialRecipe,
   });
 
-  const [generatedHtml, setGeneratedHtml] = useState<string | null>(null);
+  const [mealieRecipeUrl, setMealieRecipeUrl] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const {
@@ -52,11 +52,16 @@ export function RecipeReviewForm({ initialRecipe, setIsLoading, resetFlow }: Rec
   const onFinalSubmit = async (data: Recipe) => {
     setIsLoading(true);
     try {
-      const result = await generateMealieHtml(data);
-      if (!result.success || !result.html) {
-        throw new Error(result.error || t('errorDpaste'));
+      const result = await generateAndPostToMealie(data);
+      if (!result.success || !result.recipeSlug) {
+        throw new Error(result.error || t('errorSend'));
       }
-      setGeneratedHtml(result.html);
+      
+      const mealieUrl = process.env.NEXT_PUBLIC_MEALIE_URL;
+      // This is a bit of a guess, but common for Mealie setups
+      const group = process.env.NEXT_PUBLIC_MEALIE_GROUP || 'g/default'; 
+
+      setMealieRecipeUrl(`${mealieUrl}/${group}/r/${result.recipeSlug}`);
       setIsDialogOpen(true);
 
     } catch (error: any) {
@@ -67,16 +72,6 @@ export function RecipeReviewForm({ initialRecipe, setIsLoading, resetFlow }: Rec
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const copyToClipboard = () => {
-    if (generatedHtml) {
-      navigator.clipboard.writeText(generatedHtml);
-      toast({
-        title: "Copied!",
-        description: "Recipe HTML copied to clipboard.",
-      });
     }
   };
 
@@ -154,37 +149,23 @@ export function RecipeReviewForm({ initialRecipe, setIsLoading, resetFlow }: Rec
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Import Recipe into Mealie</DialogTitle>
+            <DialogTitle>{t('success')}</DialogTitle>
             <DialogDescription>
-              Copy the text below and paste it into the 'JSON' tab of the Mealie import page.
+              {t('successMessage')}
             </DialogDescription>
           </DialogHeader>
-          <div className="relative">
-             <Textarea
-                readOnly
-                value={generatedHtml || ''}
-                className="w-full h-64 font-mono text-xs"
-              />
-               <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 right-2"
-                onClick={copyToClipboard}
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-          </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="secondary" onClick={() => setIsDialogOpen(false)}>
-                Close
-              </Button>
-            </DialogClose>
-             <Button type="button" onClick={resetFlow}>
+          <DialogFooter className="sm:justify-between gap-2">
+            <Button type="button" variant="secondary" onClick={resetFlow}>
                 {t('reset')}
-              </Button>
+            </Button>
+            <Button asChild>
+                <a href={mealieRecipeUrl || '#'} target="_blank" rel="noopener noreferrer">
+                    {t('viewRecipe')}
+                    <ExternalLink className="ml-2 h-4 w-4" />
+                </a>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
