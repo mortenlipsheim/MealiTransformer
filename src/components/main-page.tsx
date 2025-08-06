@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, SettingsIcon } from 'lucide-react';
+import Link from 'next/link';
 
 import {
   Sidebar,
@@ -12,12 +13,12 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/logo';
-import { ConfigPanel } from '@/components/config-panel';
 import { useSettings } from '@/hooks/use-settings';
 import type { Recipe } from '@/types';
 import { RecipeInputForm } from '@/components/recipe-input-form';
 import { RecipeReviewForm } from '@/components/recipe-review-form';
 import { Separator } from './ui/separator';
+import { Button } from './ui/button';
 
 type Step = 'input' | 'review';
 
@@ -53,7 +54,14 @@ export default function MainPage() {
           <Logo />
         </SidebarHeader>
         <SidebarContent>
-          <ConfigPanel />
+           <div className="p-2">
+            <Button variant="outline" className="w-full" asChild>
+              <Link href="/settings">
+                <SettingsIcon className="mr-2 h-4 w-4" />
+                {t('settings')}
+              </Link>
+            </Button>
+          </div>
         </SidebarContent>
       </Sidebar>
       <SidebarInset>

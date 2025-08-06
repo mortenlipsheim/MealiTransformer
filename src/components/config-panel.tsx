@@ -4,15 +4,17 @@ import { useSettings } from '@/hooks/use-settings';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel } from '@/components/ui/sidebar';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
 export function ConfigPanel() {
   const { settings, setSettings, t } = useSettings();
 
   return (
-    <SidebarGroup>
-      <SidebarGroupLabel>{t('settings')}</SidebarGroupLabel>
-      <SidebarGroupContent className="space-y-4">
+    <Card className="w-full max-w-2xl">
+      <CardHeader>
+        <CardTitle className="font-headline">{t('settings')}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="mealie-url">{t('mealieUrl')}</Label>
           <Input
@@ -71,7 +73,7 @@ export function ConfigPanel() {
             </SelectContent>
           </Select>
         </div>
-      </SidebarGroupContent>
-    </SidebarGroup>
+      </CardContent>
+    </Card>
   );
 }
