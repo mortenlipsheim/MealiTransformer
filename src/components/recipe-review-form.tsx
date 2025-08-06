@@ -19,7 +19,6 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogClose,
 } from './ui/dialog';
 
 interface RecipeReviewFormProps {
@@ -58,10 +57,13 @@ export function RecipeReviewForm({ initialRecipe, setIsLoading, resetFlow }: Rec
       }
       
       const mealieUrl = process.env.NEXT_PUBLIC_MEALIE_URL;
-      // This is a bit of a guess, but common for Mealie setups
-      const group = process.env.NEXT_PUBLIC_MEALIE_GROUP || 'g/default'; 
-
-      setMealieRecipeUrl(`${mealieUrl}/${group}/r/${result.recipeSlug}`);
+      if (!mealieUrl) {
+        console.warn("NEXT_PUBLIC_MEALIE_URL is not set. The success link may not work correctly.");
+        setMealieRecipeUrl(`#`);
+      } else {
+         // This logic may need to be adjusted based on the specific Mealie setup (e.g. group slugs)
+        setMealieRecipeUrl(`${mealieUrl}/r/${result.recipeSlug}`);
+      }
       setIsDialogOpen(true);
 
     } catch (error: any) {
@@ -157,7 +159,7 @@ export function RecipeReviewForm({ initialRecipe, setIsLoading, resetFlow }: Rec
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="sm:justify-between gap-2">
-            <Button type="button" variant="secondary" onClick={resetFlow}>
+            <Button type="button" variant="secondary" onClick={() => { setIsDialogOpen(false); resetFlow(); }}>
                 {t('reset')}
             </Button>
             <Button asChild>
