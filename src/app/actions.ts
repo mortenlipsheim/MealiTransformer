@@ -145,7 +145,7 @@ export async function generateAndPostToMealie(recipe: Recipe): Promise<{ success
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ detail: 'Unknown Mealie API error' }));
       // Use the specific Mealie error detail if available, otherwise the status text.
-      const errorMessage = errorData.detail || response.statusText;
+      const errorMessage = errorData.detail || `Status ${response.status} ${response.statusText}`;
       throw new Error(`Mealie API Error: ${errorMessage}`);
     }
 
