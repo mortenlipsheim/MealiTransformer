@@ -9,13 +9,16 @@ export async function GET(
     const id = params.id;
 
     if (!id || !recipeStore.has(id)) {
-      return new Response(`Recipe with ID ${id} not found or expired. Store size: ${recipeStore.size}`, { status: 404 });
+      return new Response(`Recipe with ID ${id} not found or expired.`, { status: 404 });
     }
 
     const htmlContent = recipeStore.get(id);
     
-    // Important: We can delete it after the first GET request as Mealie should have scraped it.
-    recipeStore.delete(id); 
+    // Clean up after the first GET request as Mealie should have scraped it.
+    // Use a small timeout to ensure the response is sent before deleting.
+    setTimeout(() => {
+        recipeStore.delete(id);
+    }, 1000); 
 
     return new Response(htmlContent, {
       headers: { 'Content-Type': 'text/html' },

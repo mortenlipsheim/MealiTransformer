@@ -1,7 +1,7 @@
 'use client';
 
-import { useFieldArray, useForm, Controller } from 'react-hook-form';
-import { Trash2, PlusCircle, Loader2 } from 'lucide-react';
+import { useFieldArray, useForm } from 'react-hook-form';
+import { Trash2, PlusCircle, ExternalLink } from 'lucide-react';
 import type { Recipe } from '@/types';
 import { useSettings } from '@/hooks/use-settings';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { sendToMealie } from '@/app/actions';
+import { generateAndPostToMealie } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 
 interface RecipeReviewFormProps {
@@ -39,21 +39,25 @@ export function RecipeReviewForm({ initialRecipe, setIsLoading, resetFlow }: Rec
   const onFinalSubmit = async (data: Recipe) => {
     setIsLoading(true);
     try {
-      const mealieResult = await sendToMealie(data);
-      if (!mealieResult.success) {
-        throw new Error(mealieResult.error || t('errorSend'));
+      const result = await generateAndPostToMealie(data);
+      if (!result.success || !result.url) {
+        throw new Error(result.error || t('errorDpaste'));
       }
 
       toast({
         title: t('success'),
-        description: t('successMessage'),
+        description: "Your recipe is ready to be imported!",
+        duration: Infinity, // Keep toast open until user interacts
         action: (
-          <a href={mealieResult.url} target="_blank" rel="noopener noreferrer">
-            <Button variant="outline">{t('viewRecipe')}</Button>
+          <a href={result.url} target="_blank" rel="noopener noreferrer">
+            <Button>
+              <ExternalLink className="mr-2" />
+              {t('viewRecipe')}
+            </Button>
           </a>
         ),
       });
-      resetFlow();
+      // Don't reset flow automatically, let the user decide when they're done.
 
     } catch (error: any) {
       toast({
