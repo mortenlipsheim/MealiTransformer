@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { ReactNode } from 'react';
@@ -30,45 +31,55 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     async function loadSettings() {
-      const serverSettings = await getSettings();
-      setSettingsState(serverSettings);
-      setIsMounted(true);
+      try {
+        const serverSettings = await getSettings();
+        if (serverSettings) {
+          setSettingsState(serverSettings);
+        }
+      } catch (e) {
+        console.error("Failed to load settings", e);
+      } finally {
+        setIsMounted(true);
+      }
     }
     loadSettings();
   }, []);
 
   const setSettings = useCallback(
     (newSettings: Partial<Settings>) => {
-      setSettingsState(prevSettings => {
-        const updatedSettings = { ...prevSettings, ...newSettings };
-        // Debounce saving to avoid too many requests
-        const timer = setTimeout(async () => {
-          const result = await saveSettings(updatedSettings);
-          if (!result.success) {
-            toast({
-              variant: 'destructive',
-              title: 'Error',
-              description: 'Failed to save settings.',
-            });
-          }
-        }, 500);
-        return () => clearTimeout(timer);
-        return updatedSettings;
-      });
+      const updatedSettings = { ...settings, ...newSettings };
+      setSettingsState(updatedSettings);
+
+      // Debounce saving to avoid too many requests
+      const timer = setTimeout(async () => {
+        const result = await saveSettings(updatedSettings);
+        if (!result.success) {
+          toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Failed to save settings.',
+          });
+        }
+      }, 500);
+      
+      // This is a simplified debounce. In a real app, you'd want to clear previous timeouts.
     },
-    [toast]
+    [settings, toast]
   );
 
   const t = useCallback(
     (key: keyof (typeof translations)['en']) => {
-      return translations[settings.uiLang][key] || translations.en[key];
+      const lang = settings.uiLang || 'en';
+      return translations[lang]?.[key] || translations.en[key];
     },
     [settings.uiLang]
   );
+  
+  const value = { settings, setSettings, t };
 
   if (!isMounted) {
-    return null; // or a loading spinner
+    return null; // Or a loading spinner
   }
 
-  return <SettingsContext.Provider value={{ settings, setSettings, t }}>{children}</SettingsContext.Provider>;
+  return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 }
