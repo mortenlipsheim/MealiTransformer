@@ -2,7 +2,6 @@
 
 import { useSettings } from '@/hooks/use-settings';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
@@ -15,25 +14,6 @@ export function ConfigPanel() {
         <CardTitle className="font-headline">{t('settings')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="mealie-url">{t('mealieUrl')}</Label>
-          <Input
-            id="mealie-url"
-            placeholder={t('mealieUrlPlaceholder')}
-            value={settings.mealieUrl}
-            onChange={(e) => setSettings({ mealieUrl: e.target.value })}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="mealie-api-token">{t('mealieApiToken')}</Label>
-          <Input
-            id="mealie-api-token"
-            type="password"
-            placeholder={t('mealieApiTokenPlaceholder')}
-            value={settings.mealieApiToken}
-            onChange={(e) => setSettings({ mealieApiToken: e.target.value })}
-          />
-        </div>
         <div className="space-y-2">
           <Label htmlFor="ui-language">{t('uiLanguage')}</Label>
           <Select value={settings.uiLang} onValueChange={(value) => setSettings({ uiLang: value as 'en' | 'fr' })}>

@@ -14,8 +14,6 @@ export async function getSettings(): Promise<Settings> {
     // If the file doesn't exist or is invalid, return default settings
     console.error('Failed to read settings file, returning defaults:', error);
     return {
-      mealieUrl: '',
-      mealieApiToken: '',
       uiLang: 'en',
       targetLang: 'fr',
       targetSystem: 'metric',

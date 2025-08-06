@@ -19,7 +19,7 @@ interface RecipeReviewFormProps {
 }
 
 export function RecipeReviewForm({ initialRecipe, setIsLoading, resetFlow }: RecipeReviewFormProps) {
-  const { t, settings } = useSettings();
+  const { t } = useSettings();
   const { toast } = useToast();
   const { register, control, handleSubmit, formState: { errors } } = useForm<Recipe>({
     defaultValues: initialRecipe,
@@ -39,7 +39,7 @@ export function RecipeReviewForm({ initialRecipe, setIsLoading, resetFlow }: Rec
   const onFinalSubmit = async (data: Recipe) => {
     setIsLoading(true);
     try {
-      const mealieResult = await generateAndPostToMealie(data, settings);
+      const mealieResult = await generateAndPostToMealie(data);
       if (!mealieResult.success) {
         throw new Error(mealieResult.error || t('errorSend'));
       }

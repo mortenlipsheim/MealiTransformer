@@ -9,8 +9,6 @@ import { getSettings, saveSettings } from '@/app/settings-actions';
 import { useToast } from '@/hooks/use-toast';
 
 const defaultSettings: Settings = {
-  mealieUrl: '',
-  mealieApiToken: '',
   uiLang: 'en',
   targetLang: 'fr',
   targetSystem: 'metric',

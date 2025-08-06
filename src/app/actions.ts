@@ -98,10 +98,13 @@ export async function transformRecipe(input: TransformInput): Promise<{ success:
 }
 
 // Action to generate HTML, post it to our own API route, and then send the resulting URL to Mealie
-export async function generateAndPostToMealie(recipe: Recipe, settings: Settings): Promise<{ success: boolean; url?: string; error?: string }> {
+export async function generateAndPostToMealie(recipe: Recipe): Promise<{ success: boolean; url?: string; error?: string }> {
   try {
     if (!process.env.NEXT_PUBLIC_APP_URL) {
       throw new Error("NEXT_PUBLIC_APP_URL is not set in the environment variables. Please configure it in the .env file.");
+    }
+    if (!process.env.MEALIE_URL) {
+        throw new Error("MEALIE_URL is not set in the environment variables. Please configure it in the .env file.");
     }
 
     // 1. Generate the HTML for the recipe
@@ -121,14 +124,14 @@ export async function generateAndPostToMealie(recipe: Recipe, settings: Settings
     const { url: tempRecipeUrl } = await postResponse.json();
 
     // 3. Send the temporary URL to Mealie for scraping
-    const fullUrl = new URL('/api/recipes/scrape-url', settings.mealieUrl).toString();
+    const fullUrl = new URL('/api/recipes/scrape-url', process.env.MEALIE_URL).toString();
 
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     };
-    if (settings.mealieApiToken) {
-      headers['Authorization'] = `Bearer ${settings.mealieApiToken}`;
+    if (process.env.MEALIE_API_TOKEN) {
+      headers['Authorization'] = `Bearer ${process.env.MEALIE_API_TOKEN}`;
     }
 
     const response = await fetch(fullUrl, {
@@ -145,7 +148,7 @@ export async function generateAndPostToMealie(recipe: Recipe, settings: Settings
     const recipeSlug = await response.json(); // Mealie returns the slug of the new recipe
     // The final URL structure might depend on groups. This is a common structure.
     // You may need to adjust this if your Mealie setup is different.
-    const finalUrl = new URL(`/recipe/${recipeSlug}`, settings.mealieUrl).toString();
+    const finalUrl = new URL(`/recipe/${recipeSlug}`, process.env.MEALIE_URL).toString();
 
     return { success: true, url: finalUrl };
   } catch (error: any) {

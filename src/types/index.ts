@@ -13,8 +13,6 @@ export interface Recipe {
 }
 
 export interface Settings {
-  mealieUrl: string;
-  mealieApiToken: string;
   uiLang: 'en' | 'fr';
   targetLang: 'en' | 'fr' | 'de' | 'es' | 'it';
   targetSystem: 'metric' | 'us';
