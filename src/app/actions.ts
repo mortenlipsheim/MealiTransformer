@@ -114,14 +114,15 @@ export async function generateAndPostToMealie(recipe: Recipe): Promise<{ success
     const { html } = await generateHtmlForMealie(recipe);
 
     // 2. Post the HTML to our temporary storage API route
-    const postResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/recipe`, {
+    const postResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/recipe/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ htmlContent: html }),
     });
 
     if (!postResponse.ok) {
-      throw new Error(`Failed to create temporary recipe page. Status: ${postResponse.statusText}`);
+      const errorText = await postResponse.text();
+      throw new Error(`Failed to create temporary recipe page. Status: ${postResponse.statusText}. Body: ${errorText}`);
     }
 
     const { url: tempRecipeUrl } = await postResponse.json();
@@ -147,8 +148,8 @@ export async function generateAndPostToMealie(recipe: Recipe): Promise<{ success
     }
 
     const recipeSlug = await response.json(); // Mealie returns the slug of the new recipe
+    
     // The final URL structure might depend on groups. This is a common structure.
-    // You may need to adjust this if your Mealie setup is different.
     const finalUrl = new URL(`/recipe/${recipeSlug}`, process.env.MEALIE_URL).toString();
 
     return { success: true, url: finalUrl };

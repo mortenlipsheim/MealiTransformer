@@ -1,4 +1,4 @@
-// src/app/api/recipe/route.ts
+// src/app/api/recipe/create/route.ts
 import { NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -18,43 +18,25 @@ export async function POST(request: Request) {
     // Clean up the stored recipe after a short time to prevent memory leaks
     setTimeout(() => {
       recipeStore.delete(id);
+      console.log(`Cleaned up recipe ${id}`);
     }, 5 * 60 * 1000); // 5 minutes
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
     if (!appUrl) {
-      throw new Error('NEXT_PUBLIC_APP_URL is not set');
+      console.error('NEXT_PUBLIC_APP_URL is not set');
+      return NextResponse.json({ error: 'Server configuration error: NEXT_PUBLIC_APP_URL is not set' }, { status: 500 });
     }
 
     const url = new URL(`/api/recipe/${id}`, appUrl).toString();
 
-    return NextResponse.json({ url });
+    return NextResponse.json({ url, id });
   } catch (error: any) {
     console.error('Error in recipe POST route:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
-    try {
-    const { pathname } = new URL(request.url);
-    const id = pathname.split('/').pop();
-
-    if (!id || !recipeStore.has(id)) {
-      return new Response('Recipe not found or expired', { status: 404 });
-    }
-
-    const htmlContent = recipeStore.get(id);
-    // Important: We can delete it after the first GET request as Mealie should have scraped it.
-    recipeStore.delete(id); 
-
-    return new Response(htmlContent, {
-      headers: { 'Content-Type': 'text/html' },
-    });
-  } catch (error: any) {
-    console.error('Error in recipe GET route:', error);
-    return new Response('Internal Server Error', { status: 500 });
-  }
-}
+// This map is exported so the GET route can access it.
+// This is a workaround for the fact that these are separate, stateless serverless functions.
+// In a real app, a database (like Redis, a key-value store) would be used here.
+export { recipeStore };
