@@ -1,3 +1,4 @@
+
 'use server';
 
 import { z } from 'zod';
@@ -5,9 +6,7 @@ import { ai } from '@/ai/genkit';
 import { extractRecipeFromYoutube } from '@/ai/flows/extract-recipe-from-youtube';
 import { extractTextFromImage } from '@/ai/flows/extract-text-from-image';
 import { translateAndFormatRecipe } from '@/ai/flows/translate-and-format-recipe';
-import { generateHtmlForMealie } from '@/ai/flows/generate-html-for-mealie';
 import type { Recipe, Settings } from '@/types';
-import { v4 as uuidv4 } from 'uuid';
 
 // Helper to parse unstructured text into a recipe object
 const RecipeSchema = z.object({
@@ -98,10 +97,6 @@ export async function transformRecipe(input: TransformInput): Promise<{ success:
   }
 }
 
-interface MealieResponse {
-  id: string; // This is the recipe slug
-}
-
 export async function generateAndPostToMealie(recipe: Recipe): Promise<{ success: boolean; recipeSlug?: string; error?: string }> {
   try {
     // 1. Create a temporary page on our own app
@@ -144,10 +139,6 @@ export async function generateAndPostToMealie(recipe: Recipe): Promise<{ success
       headers,
       body: JSON.stringify({ url: tempRecipeUrl, include_tags: true }),
     });
-
-    if (response.status === 405) {
-      throw new Error('Mealie API Error: Method not allowed. The scrape-url endpoint may be disabled or you might be using an older Mealie version.');
-    }
     
     if (!response.ok) {
       const errorBody = await response.text();
