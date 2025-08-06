@@ -1,7 +1,7 @@
 {
-  "mealieUrl": "",
+  "mealieUrl": "https://mealie.gausland.com",
   "uiLang": "en",
   "targetLang": "fr",
   "targetSystem": "metric",
-  "mealieApiToken": "JhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsb25nX3Rva2VuIjp0cnVlLCJpZCI6IjY1YjhmODU3LTIwODItNDVkOS1hMDY5LTMzN2I2ZmRjM2UxMyIsIm5hbWUiOiJuOG4iLCJpbnRlZ3JhdGlvbl9pZCI6ImdlbmVyaWMiLCJleHAiOjE5MTA4NjU5OTZ9.y9OOBK7RzUHNSyLbhoZnPh5Dz9mjL9Cg6bFOFPQvc6A"
+  "mealieApiToken": "yJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsb25nX3Rva2VuIjp0cnVlLCJpZCI6IjY1YjhmODU3LTIwODItNDVkOS1hMDY5LTMzN2I2ZmRjM2UxMyIsIm5hbWUiOiJuOG4iLCJpbnRlZ3JhdGlvbl9pZCI6ImdlbmVyaWMiLCJleHAiOjE5MTA4NjU5OTZ9.y9OOBK7RzUHNSyLbhoZnPh5Dz9mjL9Cg6bFOFPQvc6A"
 }

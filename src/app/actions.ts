@@ -94,29 +94,31 @@ export async function transformRecipe(input: TransformInput): Promise<{ success:
   }
 }
 
-// Action to generate HTML and post to dpaste
+// Action to generate HTML and post to our own API route
 export async function generateAndPost(recipe: Recipe): Promise<{ success: boolean; url?: string; error?: string }> {
   try {
     const { html } = await generateHtmlForMealie(recipe);
-    const response = await fetch('https://dpaste.org/api/', {
+
+    // Instead of dpaste, we'll use a local API route to store and serve the HTML.
+    // We'll pass the HTML in the body of a POST request.
+    const response = await fetch(new URL('/api/recipe', process.env.NEXT_PUBLIC_URL), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        content: html,
-        syntax: 'html',
-        title: recipe.name,
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ html }),
     });
 
     if (!response.ok) {
-      throw new Error(`dpaste API error: ${response.statusText}`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || `API error: ${response.statusText}`);
     }
 
-    const url = await response.text();
+    const { id } = await response.json();
+    const url = new URL(`/api/recipe?id=${id}`, process.env.NEXT_PUBLIC_URL).toString();
+    
     return { success: true, url: url.trim() };
   } catch (error: any) {
-    console.error('Dpaste post error:', error);
-    return { success: false, error: error.message || 'Failed to post to dpaste.' };
+    console.error('Local post error:', error);
+    return { success: false, error: error.message || 'Failed to post to local API.' };
   }
 }
 
@@ -133,7 +135,7 @@ export async function sendToMealie(url: string, mealieUrl: string, mealieApiToke
     const response = await fetch(fullUrl, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ url }),
+      body: JSON.stringify({ url, include_tags: true }),
     });
 
     if (!response.ok) {
