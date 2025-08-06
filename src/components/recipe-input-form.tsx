@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type FormEvent, useRef } from 'react';
-import { UploadCloud, Loader2 } from 'lucide-react';
+import { UploadCloud } from 'lucide-react';
 
 import { useSettings } from '@/hooks/use-settings';
 import { Button } from '@/components/ui/button';
