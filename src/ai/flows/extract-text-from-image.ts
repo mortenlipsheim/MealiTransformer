@@ -1,4 +1,3 @@
-// src/ai/flows/extract-text-from-image.ts
 'use server';
 
 /**
