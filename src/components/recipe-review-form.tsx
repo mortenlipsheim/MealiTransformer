@@ -44,7 +44,7 @@ export function RecipeReviewForm({ initialRecipe, setIsLoading, resetFlow }: Rec
         throw new Error(dpasteResult.error || t('errorDpaste'));
       }
 
-      const mealieResult = await sendToMealie(dpasteResult.url, settings.mealieUrl);
+      const mealieResult = await sendToMealie(dpasteResult.url, settings.mealieUrl, settings.mealieApiToken);
       if (!mealieResult.success) {
         throw new Error(mealieResult.error || t('errorSend'));
       }

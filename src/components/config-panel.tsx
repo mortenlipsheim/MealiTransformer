@@ -23,6 +23,16 @@ export function ConfigPanel() {
           />
         </div>
         <div className="space-y-2">
+          <Label htmlFor="mealie-api-token">{t('mealieApiToken')}</Label>
+          <Input
+            id="mealie-api-token"
+            type="password"
+            placeholder={t('mealieApiTokenPlaceholder')}
+            value={settings.mealieApiToken}
+            onChange={(e) => setSettings({ mealieApiToken: e.target.value })}
+          />
+        </div>
+        <div className="space-y-2">
           <Label htmlFor="ui-language">{t('uiLanguage')}</Label>
           <Select value={settings.uiLang} onValueChange={(value) => setSettings({ uiLang: value as 'en' | 'fr' })}>
             <SelectTrigger id="ui-language">

@@ -121,13 +121,18 @@ export async function generateAndPost(recipe: Recipe): Promise<{ success: boolea
 }
 
 // Action to send URL to Mealie
-export async function sendToMealie(url: string, mealieUrl: string): Promise<{ success: boolean; url?: string; error?: string }> {
+export async function sendToMealie(url: string, mealieUrl: string, mealieApiToken?: string): Promise<{ success: boolean; url?: string; error?: string }> {
   try {
     const fullUrl = new URL('/api/recipes/url', mealieUrl).toString();
 
+    const headers: HeadersInit = { 'Content-Type': 'application/json' };
+    if (mealieApiToken) {
+      headers['Authorization'] = `Bearer ${mealieApiToken}`;
+    }
+
     const response = await fetch(fullUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ url }),
     });
 
