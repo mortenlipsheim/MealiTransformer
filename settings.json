@@ -1,7 +1,5 @@
 {
-  "mealieUrl": "https://mealie.gausland.com",
   "uiLang": "fr",
   "targetLang": "fr",
-  "targetSystem": "metric",
-  "mealieApiToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsb25nX3Rva2VuIjp0cnVlLCJpZCI6IjY1YjhmODU3LTIwODItNDVkOS1hMDY5LTMzN2I2ZmRjM2UxMyIsIm5hbWUiOiJGaXJlYmFzZSIsImludGVncmF0aW9uX2lkIjoiZ2VuZXJpYyIsImV4cCI6MTkxMjE1Mjg1M30.BXmuj71nnM2Lrk0wuhBdu2yAVxTrfRG3KYRRLpbwQ5k"
+  "targetSystem": "metric"
 }
