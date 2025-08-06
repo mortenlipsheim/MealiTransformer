@@ -34,8 +34,11 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET(request: Request) {
-  try {
+export async function GET(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+    try {
     const { pathname } = new URL(request.url);
     const id = pathname.split('/').pop();
 
